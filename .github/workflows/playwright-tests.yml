@@ -70,9 +70,15 @@ jobs:
 
       - name: Notify backend hasil run
         if: always()
+        continue-on-error: true
         run: |
           STATUS="${{ job.status }}"
-          curl -s -X POST "${{ secrets.APP_URL }}/api/automation/webhook/run-complete" \
+          APP="${{ secrets.APP_URL }}"
+          if [ -z "$APP" ]; then
+            echo "⚠️ APP_URL secret belum diatur, skip notifikasi webhook"
+            exit 0
+          fi
+          curl -sf -X POST "${APP}/api/automation/webhook/run-complete" \
             -H "Content-Type: application/json" \
             -H "X-Webhook-Secret: ${{ secrets.WEBHOOK_SECRET }}" \
             -d '{
@@ -82,4 +88,4 @@ jobs:
               "filter": "${{ github.event.inputs.test_filter }}",
               "environment": "${{ github.event.inputs.environment }}",
               "report_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            }'
+            }' || echo "⚠️ Webhook notification gagal (backend mungkin tidak terjangkau), tapi test tetap sukses"
