@@ -1,0 +1,17 @@
+{
+  "name": "testing-automation",
+  "version": "1.0.0",
+  "description": "Playwright E2E Tests for SauceDemo (QA Dashboard Automation)",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:auth": "npx playwright test --grep auth",
+    "test:inventory": "npx playwright test --grep inventory",
+    "test:cart": "npx playwright test --grep cart",
+    "test:checkout": "npx playwright test --grep checkout",
+    "test:headed": "npx playwright test --headed",
+    "report": "npx playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0"
+  }
+}

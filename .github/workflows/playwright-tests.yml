@@ -1,0 +1,85 @@
+name: Playwright E2E Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_filter:
+        description: 'Filter test (contoh: auth, project, atau kosong untuk semua)'
+        required: false
+        default: ''
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options: [staging, production]
+      triggered_by:
+        description: 'User ID yang memicu (diisi otomatis dari sistem)'
+        required: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright tests
+        run: |
+          FILTER="${{ github.event.inputs.test_filter }}"
+          if [ -n "$FILTER" ]; then
+            npx playwright test --grep "$FILTER" --reporter=json,html
+          else
+            npx playwright test --reporter=json,html
+          fi
+        env:
+          BASE_URL: ${{ secrets.BASE_URL }}
+          TEST_EMAIL: ${{ secrets.TEST_EMAIL }}
+          TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
+          CI: true
+
+      - name: Upload HTML Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-${{ github.run_id }}
+          path: playwright-report/
+          retention-days: 14
+
+      - name: Upload JSON Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-json-${{ github.run_id }}
+          path: test-results/results.json
+          retention-days: 14
+
+      - name: Notify backend hasil run
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"
+          curl -s -X POST "${{ secrets.APP_URL }}/api/automation/webhook/run-complete" \
+            -H "Content-Type: application/json" \
+            -H "X-Webhook-Secret: ${{ secrets.WEBHOOK_SECRET }}" \
+            -d '{
+              "run_id": "${{ github.run_id }}",
+              "status": "'"$STATUS"'",
+              "triggered_by": "${{ github.event.inputs.triggered_by }}",
+              "filter": "${{ github.event.inputs.test_filter }}",
+              "environment": "${{ github.event.inputs.environment }}",
+              "report_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }'
