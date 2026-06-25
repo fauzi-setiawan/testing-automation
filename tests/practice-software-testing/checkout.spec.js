@@ -68,7 +68,7 @@ test.describe('Checkout Flow Module', () => {
         
         // 1. Get initial stock
         await page.goto(baseURL);
-        await page.locator('[data-test="product-card"]').first().click();
+        await page.locator('.card').first().click();
         const stockStr = await page.locator('[data-test="stock"]').textContent().catch(() => '10');
         const initialStock = parseInt(stockStr.replace(/[^0-9]/g, ''), 10) || 10;
 

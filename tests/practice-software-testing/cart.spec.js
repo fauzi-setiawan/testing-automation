@@ -26,7 +26,7 @@ test.describe('Shopping Cart Module', () => {
     });
 
     test('[TC-PST-CRT-002] Add to Cart melebihi stok yang ada', async ({ page }) => {
-        await page.locator('[data-test="product-card"]').first().click();
+        await page.locator('.card').first().click();
         
         await page.waitForSelector('[data-test="increase-quantity"]');
         
@@ -46,7 +46,7 @@ test.describe('Shopping Cart Module', () => {
 
     test('[TC-PST-CRT-003] Update Qty di halaman Cart', async ({ page }) => {
         // Add a product first
-        await page.locator('[data-test="product-card"]').first().click();
+        await page.locator('.card').first().click();
         await page.waitForSelector('[data-test="add-to-cart"]');
         await page.locator('[data-test="add-to-cart"]').click();
         
