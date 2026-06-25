@@ -44,10 +44,10 @@ module.exports = defineConfig({
     trace: 'on-first-retry',
 
     /* Screenshot on failure */
-    screenshot: 'only-on-failure',
+    screenshot: 'on',
 
     /* Video on failure */
-    video: 'retain-on-failure',
+    video: 'on',
 
     /* Headless di CI */
     headless: !!process.env.CI,
