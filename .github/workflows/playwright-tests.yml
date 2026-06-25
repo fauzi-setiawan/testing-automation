@@ -3,6 +3,9 @@ name: Playwright E2E Tests
 on:
   workflow_dispatch:
     inputs:
+      project_id:
+        description: 'ID Project dari Database'
+        required: true
       test_filter:
         description: 'Filter test (contoh: auth, project, atau kosong untuk semua)'
         required: false
@@ -32,6 +35,33 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      - name: Fetch Project Credentials
+        id: fetch-creds
+        run: |
+          APP="${{ secrets.APP_URL }}"
+          if [ -z "$APP" ]; then
+            echo "⚠️ APP_URL secret belum diatur!"
+            exit 1
+          fi
+          
+          # Fetch JSON credentials from QA Dashboard API
+          RESPONSE=$(curl -s -X GET "${APP}/api/automation/projects/${{ github.event.inputs.project_id }}/credentials" \
+            -H "X-Webhook-Secret: ${{ secrets.WEBHOOK_SECRET }}" \
+            -H "Accept: application/json")
+          
+          # Extract variables using jq
+          BASE_URL=$(echo $RESPONSE | jq -r '.base_url')
+          USERNAME=$(echo $RESPONSE | jq -r '.username')
+          PASSWORD=$(echo $RESPONSE | jq -r '.password')
+          
+          # Mask password in logs
+          echo "::add-mask::$PASSWORD"
+          
+          # Export to environment for next steps
+          echo "BASE_URL=$BASE_URL" >> $GITHUB_ENV
+          echo "TEST_EMAIL=$USERNAME" >> $GITHUB_ENV
+          echo "TEST_PASSWORD=$PASSWORD" >> $GITHUB_ENV
+
       - name: Install dependencies
         run: npm ci
 
@@ -47,9 +77,6 @@ jobs:
             npx playwright test --reporter=json,html
           fi
         env:
-          BASE_URL: ${{ secrets.BASE_URL }}
-          TEST_EMAIL: ${{ secrets.TEST_EMAIL }}
-          TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
           CI: true
 
       - name: Upload HTML Report
