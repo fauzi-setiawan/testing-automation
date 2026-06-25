@@ -10,7 +10,7 @@ test.describe('Catalog & Filter Module', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto(baseURL);
         // Wait for products to load
-        await page.waitForSelector('[data-test="product-card"]', { state: 'visible', timeout: 10000 });
+        await page.waitForSelector('.card', { state: 'visible', timeout: 10000 });
     });
 
     test('[TC-PST-CAT-001] Mencari produk dengan keyword valid', async ({ page }) => {
@@ -19,7 +19,7 @@ test.describe('Catalog & Filter Module', () => {
         await page.locator('[data-test="search-submit"]').click();
 
         // Verify products displayed contain 'Pliers' in title
-        await expect(page.locator('[data-test="product-card"]')).not.toHaveCount(0);
+        await expect(page.locator('.card')).not.toHaveCount(0);
         const firstProductName = await page.locator('[data-test="product-name"]').first().textContent();
         expect(firstProductName.toLowerCase()).toContain('pliers');
     });
@@ -30,7 +30,7 @@ test.describe('Catalog & Filter Module', () => {
         await page.locator('[data-test="search-submit"]').click();
 
         // Verify no products displayed
-        await expect(page.locator('[data-test="product-card"]')).toHaveCount(0);
+        await expect(page.locator('.card')).toHaveCount(0);
         await expect(page.getByText('There are no products found.')).toBeVisible();
     });
 
@@ -46,7 +46,7 @@ test.describe('Catalog & Filter Module', () => {
 
         // Verify products are still visible or count updated by waiting for network idle or response
         await page.waitForLoadState('networkidle');
-        await expect(page.locator('[data-test="product-card"]')).toBeVisible();
+        await expect(page.locator('.card').first()).toBeVisible();
     });
 
     test('[TC-PST-CAT-004] Sorting harga mahal ke murah', async ({ page }) => {

@@ -13,10 +13,10 @@ test.describe('Checkout Flow Module', () => {
 
     test.beforeEach(async ({ page }) => {
         await page.goto(baseURL);
-        await page.waitForSelector('[data-test="product-card"]', { state: 'visible' });
+        await page.waitForSelector('.card', { state: 'visible' });
         
         // Add a product to cart as a prerequisite
-        await page.locator('[data-test="product-card"]').first().click();
+        await page.locator('.card').first().click();
         await page.waitForSelector('[data-test="add-to-cart"]');
         await page.locator('[data-test="add-to-cart"]').click();
         await page.waitForLoadState('networkidle'); // Wait for cart update

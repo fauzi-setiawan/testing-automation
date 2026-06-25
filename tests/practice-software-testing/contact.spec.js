@@ -9,17 +9,17 @@ test.describe('Contact Support Module', () => {
 
     test.beforeEach(async ({ page }) => {
         await page.goto(baseURL + '#/contact');
-        await page.waitForSelector('[data-test="contact-submit"]');
+        await page.waitForSelector('.btnSubmit');
     });
 
     test('[TC-PST-CON-001] Kirim pesan valid', async ({ page }) => {
-        await page.locator('[data-test="first-name"]').fill('Test');
-        await page.locator('[data-test="last-name"]').fill('User');
-        await page.locator('[data-test="email"]').fill('testuser@example.com');
-        await page.locator('[data-test="subject"]').selectOption('Customer service');
-        await page.locator('[data-test="message"]').fill('This is a test message that needs to be at least fifty characters long to pass validation.');
+        await page.locator('#first_name').fill('Test');
+        await page.locator('#last_name').fill('User');
+        await page.locator('#email').fill('testuser@example.com');
+        await page.locator('#subject').selectOption('Customer service');
+        await page.locator('#message').fill('This is a test message that needs to be at least fifty characters long to pass validation.');
         
-        await page.locator('[data-test="contact-submit"]').click();
+        await page.locator('.btnSubmit').click();
 
         // Verify success alert
         const alert = page.locator('.alert-success, [data-test="contact-success"]');
@@ -30,15 +30,15 @@ test.describe('Contact Support Module', () => {
     });
 
     test('[TC-PST-CON-002] Kirim form dengan message terlalu pendek', async ({ page }) => {
-        await page.locator('[data-test="first-name"]').fill('Test');
-        await page.locator('[data-test="last-name"]').fill('User');
-        await page.locator('[data-test="email"]').fill('testuser@example.com');
-        await page.locator('[data-test="subject"]').selectOption('Customer service');
+        await page.locator('#first_name').fill('Test');
+        await page.locator('#last_name').fill('User');
+        await page.locator('#email').fill('testuser@example.com');
+        await page.locator('#subject').selectOption('Customer service');
         
         // Fill message less than 50 characters
-        await page.locator('[data-test="message"]').fill('Too short message');
+        await page.locator('#message').fill('Too short message');
         
-        await page.locator('[data-test="contact-submit"]').click();
+        await page.locator('.btnSubmit').click();
 
         // Verify validation error
         const errorMessage = page.locator('[data-test="message-error"]');

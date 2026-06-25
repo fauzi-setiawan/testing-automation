@@ -9,12 +9,12 @@ test.describe('Shopping Cart Module', () => {
 
     test.beforeEach(async ({ page }) => {
         await page.goto(baseURL);
-        await page.waitForSelector('[data-test="product-card"]', { state: 'visible' });
+        await page.waitForSelector('.card', { state: 'visible' });
     });
 
     test('[TC-PST-CRT-001] Add to Cart dari list produk', async ({ page }) => {
         // Find the first product card and click it to go to details
-        await page.locator('[data-test="product-card"]').first().click();
+        await page.locator('.card').first().click();
         
         // Wait for detail page
         await page.waitForSelector('[data-test="add-to-cart"]');
