@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       project_id:
-        description: 'ID Project dari Database'
+        description: 'ID Project'
         required: true
       test_filter:
         description: 'Filter test (contoh: auth, project, atau kosong untuk semua)'
@@ -35,38 +35,41 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Fetch Project Credentials
-        id: fetch-creds
-        run: |
-          APP="${{ secrets.APP_URL }}"
-          if [ -z "$APP" ]; then
-            echo "⚠️ APP_URL secret belum diatur!"
-            exit 1
-          fi
-          
-          # Fetch JSON credentials from QA Dashboard API
-          RESPONSE=$(curl -s -X GET "${APP}/api/automation/projects/${{ github.event.inputs.project_id }}/credentials" \
-            -H "X-Webhook-Secret: ${{ secrets.WEBHOOK_SECRET }}" \
-            -H "Accept: application/json")
-          
-          # Extract variables using jq
-          BASE_URL=$(echo $RESPONSE | jq -r '.base_url')
-          USERNAME=$(echo $RESPONSE | jq -r '.username')
-          PASSWORD=$(echo $RESPONSE | jq -r '.password')
-          
-          # Mask password in logs
-          echo "::add-mask::$PASSWORD"
-          
-          # Export to environment for next steps
-          echo "BASE_URL=$BASE_URL" >> $GITHUB_ENV
-          echo "TEST_EMAIL=$USERNAME" >> $GITHUB_ENV
-          echo "TEST_PASSWORD=$PASSWORD" >> $GITHUB_ENV
-
       - name: Install dependencies
         run: npm ci
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
+
+      - name: Fetch Project Credentials
+        id: fetch-creds
+        run: |
+          APP="${{ secrets.APP_URL }}"
+          if [ -z "$APP" ]; then
+            echo "::error::APP_URL secret belum diset di GitHub"
+            exit 1
+          fi
+          
+          # Ambil kredensial dari QA Dashboard (Pastikan APP_URL adalah URL Ngrok publik Anda)
+          RESPONSE=$(curl -s -X GET "${APP}/api/automation/projects/${{ github.event.inputs.project_id }}/credentials" \
+            -H "X-Webhook-Secret: ${{ secrets.WEBHOOK_SECRET }}" \
+            -H "Accept: application/json")
+          
+          BASE_URL=$(echo $RESPONSE | jq -r '.base_url')
+          USERNAME=$(echo $RESPONSE | jq -r '.username')
+          PASSWORD=$(echo $RESPONSE | jq -r '.password')
+          
+          if [ "$BASE_URL" = "null" ] || [ -z "$BASE_URL" ]; then
+             echo "::error::Gagal mengambil data dari QA Dashboard atau Project tidak ditemukan"
+             exit 1
+          fi
+          
+          # Samarkan password di log
+          echo "::add-mask::$PASSWORD"
+          
+          echo "base_url=$BASE_URL" >> $GITHUB_OUTPUT
+          echo "username=$USERNAME" >> $GITHUB_OUTPUT
+          echo "password=$PASSWORD" >> $GITHUB_OUTPUT
 
       - name: Run Playwright tests
         run: |
@@ -77,6 +80,9 @@ jobs:
             npx playwright test --reporter=json,html
           fi
         env:
+          BASE_URL: ${{ steps.fetch-creds.outputs.base_url }}
+          TEST_EMAIL: ${{ steps.fetch-creds.outputs.username }}
+          TEST_PASSWORD: ${{ steps.fetch-creds.outputs.password }}
           CI: true
 
       - name: Upload HTML Report
@@ -95,15 +101,6 @@ jobs:
           path: test-results/results.json
           retention-days: 14
 
-      - name: Deploy Report to GitHub Pages
-        if: always()
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./playwright-report
-          destination_dir: reports/${{ github.run_id }}
-          keep_files: true
-
       - name: Notify backend hasil run
         if: always()
         continue-on-error: true
@@ -113,10 +110,7 @@ jobs:
           REPO_OWNER="${{ github.repository_owner }}"
           REPO_NAME="${{ github.event.repository.name }}"
           REPORT_URL="https://${REPO_OWNER}.github.io/${REPO_NAME}/reports/${{ github.run_id }}/"
-          if [ -z "$APP" ]; then
-            echo "⚠️ APP_URL secret belum diatur, skip notifikasi webhook"
-            exit 0
-          fi
+          
           curl -sf -X POST "${APP}/api/automation/webhook/run-complete" \
             -H "Content-Type: application/json" \
             -H "X-Webhook-Secret: ${{ secrets.WEBHOOK_SECRET }}" \
@@ -127,4 +121,4 @@ jobs:
               "filter": "${{ github.event.inputs.test_filter }}",
               "environment": "${{ github.event.inputs.environment }}",
               "report_url": "'"$REPORT_URL"'"
-            }' || echo "⚠️ Webhook notification gagal (backend mungkin tidak terjangkau), tapi test tetap sukses"
+            }' || echo "Webhook notification gagal (mungkin Ngrok terputus)"
