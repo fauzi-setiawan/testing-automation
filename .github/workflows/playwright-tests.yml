@@ -20,6 +20,9 @@ on:
         description: 'User ID yang memicu (diisi otomatis dari sistem)'
         required: false
 
+permissions:
+  contents: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
