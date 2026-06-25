@@ -44,10 +44,8 @@ test.describe('Catalog & Filter Module', () => {
             await brandCheckbox.check();
         }
 
-        // Wait for results to update
-        await page.waitForTimeout(1000); 
-
-        // Verify products are still visible or count updated
+        // Verify products are still visible or count updated by waiting for network idle or response
+        await page.waitForLoadState('networkidle');
         await expect(page.locator('[data-test="product-card"]')).toBeVisible();
     });
 
@@ -55,7 +53,7 @@ test.describe('Catalog & Filter Module', () => {
         const sortDropdown = page.locator('[data-test="sort"]');
         await sortDropdown.selectOption('price,desc'); // 'Price (High - Low)'
 
-        await page.waitForTimeout(1000); // Wait for sort
+        await page.waitForLoadState('networkidle'); // Wait for sort network requests
 
         // Extract first two product prices and compare
         const priceLocators = page.locator('[data-test="product-price"]');

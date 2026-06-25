@@ -58,8 +58,8 @@ test.describe('Shopping Cart Module', () => {
         const qtyInput = page.locator('input[type="number"], [data-test="item-quantity"]').first();
         if (await qtyInput.count() > 0) {
             await qtyInput.fill('3');
-            // Check if subtotal is updated (just verifying the element exists and updates)
-            await page.waitForTimeout(1000);
+            // Check if subtotal is updated
+            await page.waitForLoadState('networkidle');
             await expect(page.locator('[data-test="cart-total"]')).toBeVisible();
         }
     });

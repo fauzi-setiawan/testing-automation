@@ -19,7 +19,7 @@ test.describe('Checkout Flow Module', () => {
         await page.locator('[data-test="product-card"]').first().click();
         await page.waitForSelector('[data-test="add-to-cart"]');
         await page.locator('[data-test="add-to-cart"]').click();
-        await page.waitForTimeout(1000); // Wait for cart update
+        await page.waitForLoadState('networkidle'); // Wait for cart update
     });
 
     test('[TC-PST-CHK-001] Checkout sebagai tamu (Guest)', async ({ page }) => {
@@ -39,7 +39,7 @@ test.describe('Checkout Flow Module', () => {
         await page.locator('[data-test="email"]').fill(testEmail);
         await page.locator('[data-test="password"]').fill(testPassword);
         await page.locator('[data-test="login-submit"]').click();
-        await page.waitForTimeout(2000); // Wait for auth
+        await page.waitForLoadState('networkidle'); // Wait for auth
 
         // Step 2: Address
         if (await page.locator('[data-test="proceed-2"]').isVisible()) {
