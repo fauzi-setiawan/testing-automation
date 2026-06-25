@@ -40,19 +40,45 @@ jobs:
         run: |
           APP="${{ secrets.APP_URL }}"
           if [ -z "$APP" ]; then
-            echo "⚠️ APP_URL secret belum diatur!"
+            echo "::error::APP_URL secret belum diatur!"
             exit 1
           fi
           
+          echo "🔍 Fetching credentials from: ${APP}/api/automation/projects/${{ github.event.inputs.project_id }}/credentials"
+          
           # Fetch JSON credentials from QA Dashboard API
+          # Header ngrok-skip-browser-warning diperlukan agar Ngrok tidak menampilkan halaman HTML peringatan
           RESPONSE=$(curl -s -X GET "${APP}/api/automation/projects/${{ github.event.inputs.project_id }}/credentials" \
             -H "X-Webhook-Secret: ${{ secrets.WEBHOOK_SECRET }}" \
+            -H "ngrok-skip-browser-warning: 1" \
             -H "Accept: application/json")
           
+          echo "📦 Raw API Response: $RESPONSE"
+          
+          # Cek jika response adalah HTML (Ngrok warning page)
+          if echo "$RESPONSE" | grep -qi "<html"; then
+            echo "::error::API mengembalikan HTML, bukan JSON. Kemungkinan Ngrok memblokir request."
+            exit 1
+          fi
+          
+          # Cek jika response kosong
+          if [ -z "$RESPONSE" ]; then
+            echo "::error::Response kosong. Pastikan APP_URL dan Ngrok aktif."
+            exit 1
+          fi
+          
           # Extract variables using jq
-          BASE_URL=$(echo $RESPONSE | jq -r '.base_url')
-          USERNAME=$(echo $RESPONSE | jq -r '.username')
-          PASSWORD=$(echo $RESPONSE | jq -r '.password')
+          BASE_URL=$(echo "$RESPONSE" | jq -r '.base_url // empty')
+          USERNAME=$(echo "$RESPONSE" | jq -r '.username // empty')
+          PASSWORD=$(echo "$RESPONSE" | jq -r '.password // empty')
+          
+          echo "🌐 BASE_URL: $BASE_URL"
+          echo "👤 USERNAME: $USERNAME"
+          
+          if [ -z "$BASE_URL" ]; then
+            echo "::error::BASE_URL kosong! Response dari API: $RESPONSE"
+            exit 1
+          fi
           
           # Mask password in logs
           echo "::add-mask::$PASSWORD"
@@ -61,6 +87,8 @@ jobs:
           echo "BASE_URL=$BASE_URL" >> $GITHUB_ENV
           echo "TEST_EMAIL=$USERNAME" >> $GITHUB_ENV
           echo "TEST_PASSWORD=$PASSWORD" >> $GITHUB_ENV
+          
+          echo "✅ Credentials berhasil dimuat untuk project ${{ github.event.inputs.project_id }}"
 
       - name: Install dependencies
         run: npm ci
@@ -120,6 +148,7 @@ jobs:
           curl -sf -X POST "${APP}/api/automation/webhook/run-complete" \
             -H "Content-Type: application/json" \
             -H "X-Webhook-Secret: ${{ secrets.WEBHOOK_SECRET }}" \
+            -H "ngrok-skip-browser-warning: 1" \
             -d '{
               "run_id": "${{ github.run_id }}",
               "status": "'"$STATUS"'",
