@@ -13,7 +13,7 @@ test.describe('Authentication Module', () => {
 
     test.beforeEach(async ({ page }) => {
         // Go to login page
-        await page.goto(baseURL + '#/auth/login');
+        await page.goto(baseURL + '/auth/login');
     });
 
     test('[TC-PST-AUTH-001] Login dengan kredensial valid', async ({ page }) => {
@@ -46,7 +46,7 @@ test.describe('Authentication Module', () => {
     });
 
     test('[TC-PST-AUTH-004] Register akun baru valid', async ({ page }) => {
-        await page.goto(baseURL + '#/auth/register');
+        await page.goto(baseURL + '/auth/register');
 
         const uniqueEmail = `testuser${Date.now()}@test.com`;
 
